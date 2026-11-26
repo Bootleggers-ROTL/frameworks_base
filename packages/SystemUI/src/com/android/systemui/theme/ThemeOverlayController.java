@@ -27,6 +27,7 @@ import static com.android.systemui.theme.ThemeOverlayApplier.COLOR_SOURCE_LOCK;
 import static com.android.systemui.theme.ThemeOverlayApplier.COLOR_SOURCE_PRESET;
 import static com.android.systemui.theme.ThemeOverlayApplier.OVERLAY_CATEGORY_ACCENT_COLOR;
 import static com.android.systemui.theme.ThemeOverlayApplier.OVERLAY_CATEGORY_DYNAMIC_COLOR;
+import static com.android.systemui.theme.ThemeOverlayApplier.OVERLAY_CATEGORY_SHISHUFIED_COLORS;
 import static com.android.systemui.theme.ThemeOverlayApplier.OVERLAY_CATEGORY_SYSTEM_PALETTE;
 import static com.android.systemui.theme.ThemeOverlayApplier.OVERLAY_CATEGORY_THEME_STYLE;
 import static com.android.systemui.theme.ThemeOverlayApplier.OVERLAY_COLOR_BOTH;
@@ -82,6 +83,9 @@ import com.android.systemui.keyguard.domain.interactor.KeyguardTransitionInterac
 import com.android.systemui.keyguard.shared.model.KeyguardState;
 import com.android.systemui.monet.ColorScheme;
 import com.android.systemui.monet.DynamicColors;
+import com.android.systemui.monet.PureColorPaletteSpec;
+import com.android.systemui.theme.shishufied.PureColorSettingsReader;
+import com.android.systemui.theme.shishufied.PureColorSpecResolver;
 import com.android.systemui.settings.UserTracker;
 import com.android.systemui.statusbar.policy.DeviceProvisionedController;
 import com.android.systemui.statusbar.policy.DeviceProvisionedController.DeviceProvisionedListener;
@@ -168,6 +172,10 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
     private FabricatedOverlay mNeutralOverlay;
     // Dynamic colors overlay
     private FabricatedOverlay mDynamicOverlay;
+    // Shishufied colors overlay
+    private PureColorPaletteSpec mPureColorPaletteSpec;
+    private PureColorSpecResolver mPureColorSpecResolver;
+    private FabricatedOverlay mShishufiedColorsOverlay;
     // If wallpaper color event will be accepted and change the UI colors.
     private boolean mAcceptColorEvents = true;
     // If non-null (per user), colors that were sent to the framework, and processing was deferred
@@ -470,6 +478,10 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
         mSecureSettings = secureSettings;
         mWallpaperManager = wallpaperManager;
         mUserTracker = userTracker;
+        mPureColorSpecResolver = new PureColorSpecResolver(new PureColorSettingsReader(() -> 
+            mSecureSettings.getStringForUser(
+                        Settings.Secure.THEME_CUSTOMIZATION_OVERLAY_PACKAGES,
+                        mUserTracker.getUserId())));
         mResources = resources;
         mWakefulnessLifecycle = wakefulnessLifecycle;
         mJavaAdapter = javaAdapter;
@@ -686,8 +698,13 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
     }
 
     private void createOverlays(int color) {
-        mDarkColorScheme = new ColorScheme(color, true /* isDark */, mThemeStyle, mContrast);
-        mLightColorScheme = new ColorScheme(color, false /* isDark */, mThemeStyle, mContrast);
+        mPureColorPaletteSpec = mThemeStyle == ThemeStyle.PURE_COLOR
+                ? mPureColorSpecResolver.resolve(mContext.getResources(), color)
+                : null;
+        mDarkColorScheme = new ColorScheme(color, true /* isDark */, mThemeStyle,
+                mContrast, mPureColorPaletteSpec);
+        mLightColorScheme = new ColorScheme(color, false /* isDark */, mThemeStyle,
+                mContrast, mPureColorPaletteSpec);
         mColorScheme = isNightMode() ? mDarkColorScheme : mLightColorScheme;
 
         mAccentOverlay = newFabricatedOverlay("accent");
@@ -703,6 +720,14 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
         assignColorsToOverlay(mDynamicOverlay, DynamicColors.getFixedColorsMapped());
         // Custom Colors
         assignColorsToOverlay(mDynamicOverlay, DynamicColors.getCustomColorsMapped());
+
+        if (mThemeStyle == ThemeStyle.PURE_COLOR) {
+            mShishufiedColorsOverlay = newFabricatedOverlay("shishufied_colors");
+            assignColorsToOverlay(mShishufiedColorsOverlay,
+                    DynamicColors.getPureColorPinnedRolesMapped());
+        } else {
+            mShishufiedColorsOverlay = null;
+        }
     }
 
     private void assignColorsToOverlay(FabricatedOverlay overlay,
@@ -782,6 +807,10 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
             }
         }
 
+        if (mThemeStyle != ThemeStyle.PURE_COLOR) {
+            categoryToPackage.remove(OVERLAY_CATEGORY_SHISHUFIED_COLORS);
+        }
+
         // Let's generate system overlay if the style picker decided to override it.
         OverlayIdentifier systemPalette = categoryToPackage.get(OVERLAY_CATEGORY_SYSTEM_PALETTE);
         if (mIsMonetEnabled && systemPalette != null && systemPalette.getPackageName() != null) {
@@ -857,9 +886,11 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
 
         if (mNeedsOverlayCreation) {
             mNeedsOverlayCreation = false;
-            fOverlays = new FabricatedOverlay[]{
-                    mAccentOverlay, mNeutralOverlay, mDynamicOverlay
-            };
+            fOverlays = mThemeStyle == ThemeStyle.PURE_COLOR
+                    ? new FabricatedOverlay[]{mAccentOverlay, mNeutralOverlay,
+                            mDynamicOverlay, mShishufiedColorsOverlay}
+                    : new FabricatedOverlay[]{
+                            mAccentOverlay, mNeutralOverlay, mDynamicOverlay};
         }
 
         mThemeManager.applyCurrentUserOverlays(categoryToPackage, fOverlays, currentUser,
@@ -876,7 +907,7 @@ public class ThemeOverlayController implements CoreStartable, Dumpable {
                 Arrays.asList(ThemeStyle.EXPRESSIVE,
                         ThemeStyle.SPRITZ, ThemeStyle.TONAL_SPOT, ThemeStyle.FRUIT_SALAD,
                         ThemeStyle.RAINBOW, ThemeStyle.VIBRANT,
-                        ThemeStyle.MONOCHROMATIC));
+                        ThemeStyle.MONOCHROMATIC, ThemeStyle.PURE_COLOR));
 
         @ThemeStyle.Type int style = mThemeStyle;
         final String overlayPackageJson = mSecureSettings.getStringForUser(

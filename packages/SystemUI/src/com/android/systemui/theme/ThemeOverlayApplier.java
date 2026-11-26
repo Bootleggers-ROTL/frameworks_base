@@ -75,6 +75,8 @@ public class ThemeOverlayApplier implements Dumpable {
             "android.theme.customization.system_palette";
     static final String OVERLAY_CATEGORY_THEME_STYLE =
             "android.theme.customization.theme_style";
+    static final String OVERLAY_CATEGORY_SHISHUFIED_COLORS =
+            "android.theme.customization.shishufied_colors";
 
     static final String OVERLAY_COLOR_SOURCE = "android.theme.customization.color_source";
 
@@ -125,7 +127,8 @@ public class ThemeOverlayApplier implements Dumpable {
             OVERLAY_CATEGORY_ICON_ANDROID,
             OVERLAY_CATEGORY_ICON_SYSUI,
             OVERLAY_CATEGORY_ICON_SETTINGS,
-            OVERLAY_CATEGORY_ICON_THEME_PICKER);
+            OVERLAY_CATEGORY_ICON_THEME_PICKER,
+            OVERLAY_CATEGORY_SHISHUFIED_COLORS);
 
     /* Categories that need to be applied to the current user as well as the system user. */
     @VisibleForTesting
@@ -136,7 +139,8 @@ public class ThemeOverlayApplier implements Dumpable {
             OVERLAY_CATEGORY_FONT,
             OVERLAY_CATEGORY_SHAPE,
             OVERLAY_CATEGORY_ICON_ANDROID,
-            OVERLAY_CATEGORY_ICON_SYSUI);
+            OVERLAY_CATEGORY_ICON_SYSUI,
+            OVERLAY_CATEGORY_SHISHUFIED_COLORS);
 
     /* Allowed overlay categories for each target package. */
     private final Map<String, Set<String>> mTargetPackageToCategories = new ArrayMap<>();
@@ -164,7 +168,8 @@ public class ThemeOverlayApplier implements Dumpable {
                 OVERLAY_CATEGORY_SYSTEM_PALETTE, OVERLAY_CATEGORY_ACCENT_COLOR,
                 OVERLAY_CATEGORY_DYNAMIC_COLOR,
                 OVERLAY_CATEGORY_FONT, OVERLAY_CATEGORY_SHAPE,
-                OVERLAY_CATEGORY_ICON_ANDROID));
+                OVERLAY_CATEGORY_ICON_ANDROID,
+                OVERLAY_CATEGORY_SHISHUFIED_COLORS));
         mTargetPackageToCategories.put(SYSUI_PACKAGE,
                 Sets.newHashSet(OVERLAY_CATEGORY_ICON_SYSUI));
         mTargetPackageToCategories.put(SETTINGS_PACKAGE,
@@ -175,6 +180,7 @@ public class ThemeOverlayApplier implements Dumpable {
                 Sets.newHashSet(OVERLAY_CATEGORY_ICON_THEME_PICKER));
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ACCENT_COLOR, ANDROID_PACKAGE);
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_DYNAMIC_COLOR, ANDROID_PACKAGE);
+        mCategoryToTargetPackage.put(OVERLAY_CATEGORY_SHISHUFIED_COLORS, ANDROID_PACKAGE);
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_FONT, ANDROID_PACKAGE);
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_SHAPE, ANDROID_PACKAGE);
         mCategoryToTargetPackage.put(OVERLAY_CATEGORY_ICON_ANDROID, ANDROID_PACKAGE);

@@ -1460,6 +1460,7 @@ package android.content.theming {
     field public static final int EXPRESSIVE = 3; // 0x3
     field public static final int FRUIT_SALAD = 5; // 0x5
     field public static final int MONOCHROMATIC = 7; // 0x7
+    field public static final int PURE_COLOR = 11; // 0xb
     field public static final int RAINBOW = 4; // 0x4
     field public static final int SPRITZ = 0; // 0x0
     field public static final int TONAL_SPOT = 1; // 0x1
